@@ -1,10 +1,30 @@
-﻿namespace BankProject
+﻿using System;
+using System.Diagnostics.Tracing;
+using System.Reflection;
+
+namespace BankProject
 {
     /// <summary>
     /// Bank műveleteit végrehajtó osztály.
     /// </summary>
     public class Bank
     {
+        private class Szamla
+        {
+            public Szamla(string nev, string szamlaszam) 
+            {
+                Nev = nev;
+                Szamlaszam = szamlaszam;
+                Egyenleg = 0;
+            }
+            public string Nev { get; set; }
+
+            public string Szamlaszam { get; set; }
+            public ulong Egyenleg { get; set; }
+        }
+
+        private List<Szamla> szamlak = new List<Szamla> ();
+
         /// <summary>
         /// Új számlát nyit a megadott névvel, számlaszámmal, 0 Ft egyenleggel
         /// </summary>
@@ -16,7 +36,41 @@
         /// A számlaszám számot, szóközt és kötőjelet tartalmazhat</exception>
         public void UjSzamla(string nev, string szamlaszam)
         {
-            throw new NotImplementedException();
+            if (nev == null)
+            {
+                throw new ArgumentNullException(nameof(nev));
+            }
+
+            if (szamlaszam == null)
+            {
+                throw new ArgumentNullException(nameof(szamlaszam));
+            }
+
+            if (nev == "")
+            {
+                throw new ArgumentException("A név nem lehet üres", nameof(nev));
+            }
+
+            if (szamlaszam == "")
+            {
+                throw new ArgumentException("A számlaszám nem lehet üres", nameof(szamlaszam));
+            }
+
+            int index = 0;
+            while (index < szamlak.Count && szamlak[index].Szamlaszam != szamlaszam)
+            {
+                index++;
+            }
+
+            if(index < szamlak.Count)
+            {
+                throw new ArgumentException("A megadott számlaszámmal létezik számla", nameof(szamlaszam));
+            }
+
+            
+
+            Szamla szamla = new Szamla(nev, szamlaszam);
+            szamlak.Add(szamla);
         }
 
         /// <summary>
@@ -29,7 +83,9 @@
         /// <exception cref="HibasSzamlaszamException">A megadott számlaszámmal nem létezik számla</exception>
         public ulong Egyenleg(string szamlaszam)
         {
-            throw new NotImplementedException();
+            Szamla szamla = SzamlaKereses(szamlaszam);
+            return szamla.Egyenleg;
+            
         }
 
         /// <summary>
@@ -43,7 +99,14 @@
         /// <exception cref="HibasSzamlaszamException">A megadott számlaszámmal nem létezik számla</exception>
         public void EgyenlegFeltolt(string szamlaszam, ulong osszeg)
         {
-            throw new NotImplementedException();
+            if (osszeg == 0)
+            {
+                throw new ArgumentException("Az összeg csak pozitív lehet!", nameof(osszeg)); 
+            }
+
+            Szamla szamla = SzamlaKereses(szamlaszam);
+            szamla.Egyenleg += osszeg;
+
         }
 
         /// <summary>
@@ -60,7 +123,60 @@
         /// <exception cref="HibasSzamlaszamException">A megadott számlaszámmal nem létezik számla</exception>
         public bool Utal(string honnan, string hova, ulong osszeg)
         {
-            throw new NotImplementedException();
+
+            Szamla szamla1 = SzamlaKereses(honnan);
+            Szamla szamla2 = SzamlaKereses(hova);
+
+            if (osszeg == 0)
+            {
+                throw new ArgumentException(nameof(osszeg));
+            }
+
+            if(szamla1.Szamlaszam == szamla2.Szamlaszam)
+            {
+                throw new ArgumentException("A két számlaszám nem lehet ugyan az!", nameof(hova));
+            }
+
+            if (szamla1.Egyenleg >= osszeg)
+            {
+                szamla1.Egyenleg -= osszeg;
+                szamla2.Egyenleg += osszeg;
+                return true;
+            }
+            return false;
+
+            
+
+
+
+            
+        }
+
+        private Szamla SzamlaKereses(string szamlaszam)
+        {
+            if (szamlaszam == null)
+            {
+                throw new ArgumentNullException(nameof(szamlaszam));
+            }
+
+            if (szamlaszam == "")
+            {
+                throw new ArgumentException("A számlaszám nem lehet üres", nameof(szamlaszam));
+            }
+
+            int index = 0;
+            while (index < szamlak.Count && szamlak[index].Szamlaszam != szamlaszam)
+            {
+                index++;
+            }
+
+
+            if (index == szamlak.Count)
+            {
+                throw new HibasSzamlaszamException(szamlaszam);
+            }
+
+            return this.szamlak[index];
         }
     }
 }
